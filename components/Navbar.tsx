@@ -70,6 +70,12 @@ export function Navbar() {
                     >
                       Profile
                     </Link>
+                    <Link
+                      href="/attendance"
+                      className="block px-4 py-2 hover:bg-[#f1f7fe] transition-colors"
+                    >
+                      Attendance
+                    </Link>
                     <button
                       onClick={handleLogout}
                       className="w-full text-left px-4 py-2 hover:bg-[#f1f7fe] transition-colors border-t border-[#83bff6]"
@@ -143,6 +149,18 @@ export function Navbar() {
                 >
                   Profile ({user.name})
                 </Link>
+                <Link
+                      href="/profile"
+                      className="block px-4 py-2 hover:bg-[#f1f7fe] transition-colors"
+                    >
+                      Profile
+                    </Link>
+                    <Link
+                      href="/attendance"
+                      className="block px-4 py-2 hover:bg-[#f1f7fe] transition-colors"
+                    >
+                      Attendance
+                    </Link>
                 <button
                   onClick={() => {
                     handleLogout();

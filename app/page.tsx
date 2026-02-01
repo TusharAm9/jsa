@@ -1,11 +1,13 @@
 'use client';
 
 import { GrUserWorker, GrWorkshop } from "react-icons/gr";
+import { GiExitDoor,GiEntryDoor  } from "react-icons/gi";
 import { FaMoneyBillWave } from "react-icons/fa";
 import { MdLogout } from "react-icons/md";
 import Link from "next/link";
 import { useAuth } from "./context/AuthContext";
 import { useRouter } from "next/navigation";
+import AttendanceButtons from "@/components/Attendence";
 
 export default function Home() {
   const { user, isLoading, logout } = useAuth();
@@ -19,7 +21,7 @@ export default function Home() {
   const handleAddWorkClick = (e: React.MouseEvent<HTMLAnchorElement>) => {
     if (!user) {
       e.preventDefault();
-      router.push('/auth/login?redirect=/work/create-work');
+      router.push('/login?redirect=/work/create-work');
     }
   };
 
@@ -69,7 +71,16 @@ export default function Home() {
           Welcome, <span className="text-[#83bff6]">{user.name}</span>! 👋
         </h2>
         <p className="text-[#0b2546] mt-2">Email: {user.email}</p>
+        <p className="text-2xl font-bold text-[#0d457f]"> {new Date().toLocaleString('en-US', {
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+    hour: '2-digit',
+    minute: '2-digit',
+  })}</p>
       </div>
+
+<AttendanceButtons/>
 
       <div className="flex flex-wrap justify-center gap-4">
         <div className="bg-[#83bff6] flex flex-col items-center justify-center p-6 rounded-lg shadow-md mt-8 gap-2 hover:shadow-lg hover:bg-[#6aaceb] transition-all">
