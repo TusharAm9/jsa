@@ -2,6 +2,16 @@ import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { getSessionFromCookie } from '@/lib/auth';
 
+
+function serializeBigInt(data: any) {
+  return JSON.parse(
+    JSON.stringify(data, (_, value) =>
+      typeof value === 'bigint' ? value.toString() : value
+    )
+  );
+}
+
+
 // Get user work details
 export async function GET(
   request: NextRequest,
@@ -39,6 +49,9 @@ export async function GET(
         WorkOrders: {
           orderBy: { createdAt: 'desc' },
         },
+        attendences: {
+          orderBy: { attendance_date: 'desc' },
+        },
       },
     });
 
@@ -66,18 +79,26 @@ export async function GET(
         .length,
     };
 
+    const safeUser = serializeBigInt({
+      id: user.id,
+      name: user.name,
+      email: user.email,
+      phone: user.phone,
+      createdAt: user.createdAt,
+      summary,
+      workOrders: user.WorkOrders,
+      attendences: user.attendences.map(a => ({
+  ...a,
+  attendance_date: a.attendance_date.toISOString().split('T')[0],
+  mark_in: a.mark_in ? a.mark_in.toISOString() : null,
+  mark_out: a.mark_out ? a.mark_out.toISOString() : null,
+})),
+    });
+
     return NextResponse.json(
       {
         message: 'User work details retrieved successfully',
-        user: {
-          id: user.id,
-          name: user.name,
-          email: user.email,
-          phone: user.phone,
-          createdAt: user.createdAt,
-          summary,
-          workOrders: user.WorkOrders,
-        },
+        user:safeUser,
       },
       { status: 200 }
     );

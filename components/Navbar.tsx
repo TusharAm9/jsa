@@ -11,7 +11,7 @@ export function Navbar() {
   const [isOpen, setIsOpen] = useState(false);
 
   const handleLogout = async () => {
-    await fetch('/api/auth/logout', { method: 'POST' });
+    await fetch('/api/logout', { method: 'POST' });
     logout();
     router.push('/');
   };
@@ -39,9 +39,19 @@ export function Navbar() {
             {user ? (
               <>
                 {user.role === 'ADMIN' && (
-                  <Link href="/admin" className="hover:text-[#83bff6] transition-colors font-medium">
+                  <>
+                   <Link href="/admin" className="hover:text-[#83bff6] transition-colors font-medium">
                     Admin Dashboard
                   </Link>
+                  <Link
+                    href="/admin/attandence"
+                    className="block px-4 py-2 hover:bg-[#0d457f] rounded-lg transition-colors font-medium"
+                    onClick={() => setIsOpen(false)}
+                  >
+                    Attandance Dashboard
+                  </Link>
+                  </>
+                  
                 )}
                 <Link href="/work" className="hover:text-[#83bff6] transition-colors font-medium">
                   Work Orders
@@ -91,7 +101,7 @@ export function Navbar() {
                   Login
                 </Link>
                 <Link
-                  href="/auth/signup"
+                  href="/signup"
                   className="bg-[#83bff6] text-[#0d457f] px-4 py-2 rounded-lg font-bold hover:bg-white transition-colors"
                 >
                   Sign Up
@@ -127,6 +137,7 @@ export function Navbar() {
             {user ? (
               <>
                 {user.role === 'ADMIN' && (
+                  <>
                   <Link
                     href="/admin"
                     className="block px-4 py-2 hover:bg-[#0d457f] rounded-lg transition-colors font-medium"
@@ -134,6 +145,15 @@ export function Navbar() {
                   >
                     Admin Dashboard
                   </Link>
+                  <Link
+                    href="/admin/attandence"
+                    className="block px-4 py-2 hover:bg-[#0d457f] rounded-lg transition-colors font-medium"
+                    onClick={() => setIsOpen(false)}
+                  >
+                    Attandance Dashboard
+                  </Link>
+                  </>
+                  
                 )}
                 <Link
                   href="/work"
@@ -174,7 +194,7 @@ export function Navbar() {
             ) : (
               <>
                 <Link
-                  href="/auth/login"
+                  href="/login"
                   className="block px-4 py-2 hover:bg-[#0d457f] rounded-lg transition-colors font-medium"
                   onClick={() => setIsOpen(false)}
                 >
