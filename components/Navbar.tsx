@@ -97,7 +97,7 @@ export function Navbar() {
               </>
             ) : (
               <>
-                <Link href="/auth/login" className="hover:text-[#83bff6] transition-colors font-medium">
+                <Link href="/login" className="hover:text-[#83bff6] transition-colors font-medium">
                   Login
                 </Link>
                 <Link
@@ -201,7 +201,7 @@ export function Navbar() {
                   Login
                 </Link>
                 <Link
-                  href="/auth/signup"
+                  href="/signup"
                   className="block px-4 py-2 bg-[#83bff6] text-[#0d457f] rounded-lg font-bold hover:bg-white transition-colors"
                   onClick={() => setIsOpen(false)}
                 >
