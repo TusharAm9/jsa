@@ -42,7 +42,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Validate service type
-    const validServiceTypes = ['FullValue', 'UBR', 'P2'];
+    const validServiceTypes = ['FullValue', 'UBR', 'P2', 'UninstalationIDUSTB', 'UninstalationODU'];
     if (!validServiceTypes.includes(ServiceType)) {
       return NextResponse.json(
         { message: 'Invalid service type' },
@@ -68,7 +68,7 @@ export async function POST(request: NextRequest) {
         Address: Address.trim(),
         BuildingId: BuildingId.trim(),
         Date: workDate,
-        ServiceType: ServiceType as 'FullValue' | 'UBR' | 'P2',
+        ServiceType: ServiceType as 'FullValue' | 'UBR' | 'P2' | 'UninstalationIDUSTB' | 'UninstalationODU',
         PaymentStatus: 'PENDING',
       },
     });

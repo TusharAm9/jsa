@@ -91,9 +91,11 @@ export default function WorkPage() {
         )}
 
         {isLoading ? (
-          <div className="text-center py-12">
-            <p className="text-gray-300 text-lg">Loading work orders...</p>
-          </div>
+          <div className="text-center">
+            <div className="inline-block animate-spin rounded-full h-12 w-12 border-b-2 border-[#0d457f]"></div>
+              <p className="mt-4 text-gray-600 font-medium">Loading...</p>
+             </div>
+         
         ) : workOrders.length === 0 ? (
           <div className="bg-white rounded-lg shadow-lg p-12 text-center">
             <p className="text-gray-600 text-lg mb-4">No work orders yet</p>

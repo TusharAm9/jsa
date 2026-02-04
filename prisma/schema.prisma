@@ -20,6 +20,8 @@ enum ServiceType {
   FullValue
   UBR
   P2
+  UninstalationIDUSTB
+  UninstalationODU
 }
 enum ApprovalStatus {
   PENDING
@@ -93,4 +95,12 @@ model Attendance {
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
   @@unique([userId, attendance_date])
 
+}
+
+model Latest_news {
+  id       Int      @id @default(autoincrement())
+  title     String
+  content   String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 }

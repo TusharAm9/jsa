@@ -1,37 +1,26 @@
 'use client';
 
 import { GrUserWorker, GrWorkshop } from "react-icons/gr";
-import { GiExitDoor,GiEntryDoor  } from "react-icons/gi";
 import { FaMoneyBillWave } from "react-icons/fa";
-import { MdLogout } from "react-icons/md";
 import Link from "next/link";
 import { useAuth } from "./context/AuthContext";
 import { useRouter } from "next/navigation";
 import AttendanceButtons from "@/components/Attendence";
+import NewsSection from "@/components/NewsSection";
 
 export default function Home() {
   const { user, isLoading, logout } = useAuth();
   const router = useRouter();
 
-  const handleLogout = async () => {
-    await logout();
-    router.refresh();
-  };
-
-  const handleAddWorkClick = (e: React.MouseEvent<HTMLAnchorElement>) => {
-    if (!user) {
-      e.preventDefault();
-      router.push('/login?redirect=/work/create-work');
-    }
-  };
-
   if (isLoading) {
     return (
       <section className="bg-[#f1f7fe] min-h-screen flex flex-col items-center justify-center">
-        <div className="bg-[#0d457f] h-16 w-full text-center flex items-center justify-center text-white shadow-md">
-          <h1 className="text-4xl uppercase">JSA Dashboard</h1>
+        <div className="min-h-[calc(100vh-64px)] bg-linear-to-b from-slate-50 to-slate-100 flex items-center justify-center">
+        <div className="text-center">
+          <div className="inline-block animate-spin rounded-full h-12 w-12 border-b-2 border-[#0d457f]"></div>
+          <p className="mt-4 text-gray-600 font-medium">Loading...</p>
         </div>
-        <p className="mt-8 text-lg text-[#0d457f]">Loading...</p>
+      </div>
       </section>
     );
   }
@@ -80,7 +69,7 @@ export default function Home() {
   })}</p>
       </div>
 
-<AttendanceButtons/>
+        <AttendanceButtons/>
 
       <div className="flex flex-wrap justify-center gap-4">
         <div className="bg-[#83bff6] flex flex-col items-center justify-center p-6 rounded-lg shadow-md mt-8 gap-2 hover:shadow-lg hover:bg-[#6aaceb] transition-all">
@@ -106,15 +95,8 @@ export default function Home() {
           <Link href="/payment" className="font-bold text-xs text-[#0b2546] hover:underline">Payments</Link>
         </div>
       </div>
-
-      <div className="p-4 flex flex-col items-center justify-center gap-4">
-        <p className="text-red-600 text-2xl mt-2 underline">Latest News</p>
-        <ul className="bg-[#83bff6] p-3 rounded-lg shadow-md">
-          <span className="text-[#0b2546]">
-            New update: Maintenance schedule for next week has been posted.
-          </span>
-        </ul>
-      </div>
-    </section>
+    
+      <NewsSection/>
+      </section>
   );
 }

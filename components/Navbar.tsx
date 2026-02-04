@@ -86,6 +86,12 @@ export function Navbar() {
                     >
                       Attendance
                     </Link>
+                    <Link
+                      href="/admin/create-news"
+                      className="block px-4 py-2 hover:bg-[#f1f7fe] transition-colors"
+                    >
+                      Create news
+                    </Link>
                     <button
                       onClick={handleLogout}
                       className="w-full text-left px-4 py-2 hover:bg-[#f1f7fe] transition-colors border-t border-[#83bff6]"
@@ -152,8 +158,13 @@ export function Navbar() {
                   >
                     Attandance Dashboard
                   </Link>
+                  <Link
+                      href="/admin/create-news"
+                      className="block px-4 py-2 hover:bg-[#f1f7fe] transition-colors"
+                    >
+                      Create news
+                    </Link>
                   </>
-                  
                 )}
                 <Link
                   href="/work"

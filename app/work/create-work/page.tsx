@@ -14,7 +14,7 @@ interface FormData {
   Address: string;
   BuildingId: string;
   Date: string;
-  ServiceType: 'FullValue' | 'UBR' | 'P2';
+  ServiceType: 'FullValue' | 'UBR' | 'P2' | 'UninstalationIDUSTB' |'UninstalationODU';
 }
 
 export default function CreateWorkPage() {
@@ -278,6 +278,8 @@ export default function CreateWorkPage() {
               <option value="FullValue">Full Value</option>
               <option value="UBR">UBR</option>
               <option value="P2">P2</option>
+              <option value="UninstalationIDUSTB">Uninstall IDU/STB</option>
+              <option value="UninstalationODU">Uninstall ODU</option>
             </select>
           </div>
 
