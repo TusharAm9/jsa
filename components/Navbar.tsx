@@ -11,12 +11,11 @@ export function Navbar() {
   const [isOpen, setIsOpen] = useState(false);
 
   const handleLogout = async () => {
-    await fetch('/api/logout', { method: 'POST' });
+    await fetch('/api/auth/logout', { method: 'POST' });
     logout();
     router.push('/');
   };
 
-  // Close menu when clicking outside
   useEffect(() => {
     const handleClickOutside = () => setIsOpen(false);
     if (isOpen) {
@@ -29,29 +28,25 @@ export function Navbar() {
     <nav className="bg-[#0d457f] text-white shadow-lg">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between items-center h-16">
-          {/* Logo/Brand */}
           <Link href="/" className="flex items-center">
             <h1 className="text-2xl font-bold">JSA Dashboard</h1>
           </Link>
 
-          {/* Desktop Navigation */}
           <div className="hidden md:flex items-center gap-8">
             {user ? (
               <>
                 {user.role === 'ADMIN' && (
                   <>
-                   <Link href="/admin" className="hover:text-[#83bff6] transition-colors font-medium">
-                    Admin Dashboard
-                  </Link>
-                  <Link
-                    href="/admin/attandence"
-                    className="block px-4 py-2 hover:bg-[#0d457f] rounded-lg transition-colors font-medium"
-                    onClick={() => setIsOpen(false)}
-                  >
-                    Attandance Dashboard
-                  </Link>
+                    <Link href="/admin" className="hover:text-[#83bff6] transition-colors font-medium">
+                      Admin Dashboard
+                    </Link>
+                    <Link
+                      href="/admin/attendance"
+                      className="hover:text-[#83bff6] transition-colors font-medium"
+                    >
+                      Attendance Dashboard
+                    </Link>
                   </>
-                  
                 )}
                 <Link href="/work" className="hover:text-[#83bff6] transition-colors font-medium">
                   Work Orders
@@ -69,28 +64,19 @@ export function Navbar() {
                         strokeLinecap="round"
                         strokeLinejoin="round"
                         strokeWidth={2}
-                        d="M19 14l-7 7m0 0l-7-7m7 7V3"
+                        d="M19 9l-7 7-7-7"
                       />
                     </svg>
                   </button>
                   <div className="absolute right-0 w-48 bg-white text-[#0b2546] rounded-lg shadow-lg py-2 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all">
-                    <Link
-                      href="/profile"
-                      className="block px-4 py-2 hover:bg-[#f1f7fe] transition-colors"
-                    >
+                    <Link href="/profile" className="block px-4 py-2 hover:bg-[#f1f7fe] transition-colors">
                       Profile
                     </Link>
-                    <Link
-                      href="/attendance"
-                      className="block px-4 py-2 hover:bg-[#f1f7fe] transition-colors"
-                    >
+                    <Link href="/attendance" className="block px-4 py-2 hover:bg-[#f1f7fe] transition-colors">
                       Attendance
                     </Link>
-                    <Link
-                      href="/admin/create-news"
-                      className="block px-4 py-2 hover:bg-[#f1f7fe] transition-colors"
-                    >
-                      Create news
+                    <Link href="/admin/create-news" className="block px-4 py-2 hover:bg-[#f1f7fe] transition-colors">
+                      Create News
                     </Link>
                     <button
                       onClick={handleLogout}
@@ -116,7 +102,6 @@ export function Navbar() {
             )}
           </div>
 
-          {/* Mobile menu button */}
           <button
             onClick={() => setIsOpen(!isOpen)}
             className="md:hidden p-2 rounded-lg hover:bg-[#0a3a66] transition-colors"
@@ -137,85 +122,45 @@ export function Navbar() {
           </button>
         </div>
 
-        {/* Mobile Navigation */}
         {isOpen && (
           <div className="md:hidden bg-[#0a3a66] py-4 space-y-3">
             {user ? (
               <>
                 {user.role === 'ADMIN' && (
                   <>
-                  <Link
-                    href="/admin"
-                    className="block px-4 py-2 hover:bg-[#0d457f] rounded-lg transition-colors font-medium"
-                    onClick={() => setIsOpen(false)}
-                  >
-                    Admin Dashboard
-                  </Link>
-                  <Link
-                    href="/admin/attandence"
-                    className="block px-4 py-2 hover:bg-[#0d457f] rounded-lg transition-colors font-medium"
-                    onClick={() => setIsOpen(false)}
-                  >
-                    Attandance Dashboard
-                  </Link>
-                  <Link
-                      href="/admin/create-news"
-                      className="block px-4 py-2 hover:bg-[#f1f7fe] transition-colors"
-                    >
-                      Create news
+                    <Link href="/admin" className="block px-4 py-2 hover:bg-[#0d457f] rounded-lg" onClick={() => setIsOpen(false)}>
+                      Admin Dashboard
+                    </Link>
+                    <Link href="/admin/attendance" className="block px-4 py-2 hover:bg-[#0d457f] rounded-lg" onClick={() => setIsOpen(false)}>
+                      Attendance Dashboard
+                    </Link>
+                    <Link href="/admin/create-news" className="block px-4 py-2 hover:bg-[#0d457f] rounded-lg" onClick={() => setIsOpen(false)}>
+                      Create News
                     </Link>
                   </>
                 )}
-                <Link
-                  href="/work"
-                  className="block px-4 py-2 hover:bg-[#0d457f] rounded-lg transition-colors font-medium"
-                  onClick={() => setIsOpen(false)}
-                >
+                <Link href="/work" className="block px-4 py-2 hover:bg-[#0d457f] rounded-lg font-medium" onClick={() => setIsOpen(false)}>
                   Work Orders
                 </Link>
-                <Link
-                  href="/profile"
-                  className="block px-4 py-2 hover:bg-[#0d457f] rounded-lg transition-colors font-medium"
-                  onClick={() => setIsOpen(false)}
-                >
-                  Profile ({user.name})
+                <Link href="/profile" className="block px-4 py-2 hover:bg-[#0d457f] rounded-lg font-medium" onClick={() => setIsOpen(false)}>
+                  Profile
                 </Link>
-                <Link
-                      href="/profile"
-                      className="block px-4 py-2 hover:bg-[#f1f7fe] transition-colors"
-                    >
-                      Profile
-                    </Link>
-                    <Link
-                      href="/attendance"
-                      className="block px-4 py-2 hover:bg-[#f1f7fe] transition-colors"
-                    >
-                      Attendance
-                    </Link>
+                <Link href="/attendance" className="block px-4 py-2 hover:bg-[#0d457f] rounded-lg font-medium" onClick={() => setIsOpen(false)}>
+                  Attendance
+                </Link>
                 <button
-                  onClick={() => {
-                    handleLogout();
-                    setIsOpen(false);
-                  }}
-                  className="w-full text-left px-4 py-2 hover:bg-[#0d457f] rounded-lg transition-colors font-medium border-t border-[#083050]"
+                  onClick={() => { handleLogout(); setIsOpen(false); }}
+                  className="w-full text-left px-4 py-2 hover:bg-[#0d457f] rounded-lg font-medium border-t border-[#083050]"
                 >
                   Logout
                 </button>
               </>
             ) : (
               <>
-                <Link
-                  href="/login"
-                  className="block px-4 py-2 hover:bg-[#0d457f] rounded-lg transition-colors font-medium"
-                  onClick={() => setIsOpen(false)}
-                >
+                <Link href="/login" className="block px-4 py-2 hover:bg-[#0d457f] rounded-lg font-medium" onClick={() => setIsOpen(false)}>
                   Login
                 </Link>
-                <Link
-                  href="/signup"
-                  className="block px-4 py-2 bg-[#83bff6] text-[#0d457f] rounded-lg font-bold hover:bg-white transition-colors"
-                  onClick={() => setIsOpen(false)}
-                >
+                <Link href="/signup" className="block px-4 py-2 bg-[#83bff6] text-[#0d457f] rounded-lg font-bold" onClick={() => setIsOpen(false)}>
                   Sign Up
                 </Link>
               </>

@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import useSWR from 'swr';
 
 interface NewsItem {
   id: number;
@@ -9,52 +9,27 @@ interface NewsItem {
   createdAt: string;
 }
 
+const fetcher = (url: string) => fetch(url).then((res) => res.json());
+
 export default function LatestNews() {
-  const [news, setNews] = useState<NewsItem[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-
-  useEffect(() => {
-    fetchLatestNews();
-  }, []);
-
-  const fetchLatestNews = async () => {
-    try {
-      setLoading(true);
-      const res = await fetch('/api/news');
-      const data = await res.json();
-
-      if (!res.ok) {
-        throw new Error(data.message || 'Failed to fetch news');
-      }
-
-      setNews(data.latestNews || []);
-    } catch (err: any) {
-      setError(err.message);
-    } finally {
-      setLoading(false);
-    }
-  };
+  const { data, error, isLoading } = useSWR('/api/news', fetcher);
+  const news = (data?.latestNews || []) as NewsItem[];
 
   return (
-    <div className="p-4 flex flex-col items-center justify-center gap-4">
-      {/* Title */}
+    <div className="p-4 flex flex-col items-center justify-center gap-4 w-full">
       <h2 className="text-red-600 text-2xl font-bold underline">
         Latest News
       </h2>
 
-      {/* Loading */}
-      {loading && <p className="text-gray-600">Loading latest updates...</p>}
+      {isLoading && <p className="text-gray-600">Loading latest updates...</p>}
 
-      {/* Error */}
       {error && (
         <p className="text-red-600 font-medium">
-          {error}
+          Failed to load news
         </p>
       )}
 
-      {/* News List */}
-      {!loading && news.length === 0 && (
+      {!isLoading && news.length === 0 && (
         <p className="text-gray-500">No news available</p>
       )}
 
@@ -70,7 +45,7 @@ export default function LatestNews() {
             <p className="text-sm text-gray-700 mt-1">
               {item.content}
             </p>
-            <p className="text-xs text-gray-500 mt-1">
+            <p className="text-xs text-gray-500 mt-1 font-medium">
               {new Date(item.createdAt).toLocaleDateString()}
             </p>
           </li>

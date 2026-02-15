@@ -66,7 +66,10 @@ export async function POST(request: NextRequest) {
   } catch (error) {
     console.error("Signup error:", error);
     return NextResponse.json(
-      { message: "An error occurred during signup" },
+      {
+        message: "An error occurred during signup",
+        error: error instanceof Error ? error.message : String(error)
+      },
       { status: 500 }
     );
   }

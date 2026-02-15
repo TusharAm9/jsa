@@ -1,6 +1,7 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState } from "react";
+import useSWR from "swr";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
@@ -11,58 +12,27 @@ interface AttendanceRecord {
   attendance_date: string;
 }
 
+const fetcher = (url: string) => fetch(url).then((res) => res.json());
+
 export default function Attendance() {
   const [fromDate, setFromDate] = useState<string>("");
   const [toDate, setToDate] = useState<string>("");
-  const [attendanceDates, setAttendanceDates] = useState<Date[]>([]);
-  const [loading, setLoading] = useState(false);
-  const [month, setMonth] = useState<Date>(new Date()); // <-- calendar month
+  const [month, setMonth] = useState<Date>(new Date());
 
-  const fetchAttendance = async (from?: string, to?: string) => {
-    setLoading(true);
-    try {
-      const params = new URLSearchParams();
-      if (from) params.append("from", from);
-      if (to) params.append("to", to);
+  const params = new URLSearchParams();
+  if (fromDate) params.append("from", fromDate);
+  if (toDate) params.append("to", toDate);
 
-      const res = await fetch(`/api/attendence?${params.toString()}`);
-      const data = await res.json();
-      if (res.ok) {
-        // Convert attendance dates to Date objects
-        const dates = data.attendance.map(
-          (a: AttendanceRecord) => new Date(a.attendance_date)
-        );
-        setAttendanceDates(dates);
-
-        // Show the month of the first attendance date (or current month if none)
-        if (dates.length > 0) {
-          setMonth(dates[0]);
-        } else {
-          setMonth(new Date());
-        }
-      } else {
-        console.error(data.message);
-      }
-    } catch (error) {
-      console.error("Error fetching attendance:", error);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  // Fetch all attendance on initial load
-  useEffect(() => {
-    fetchAttendance();
-  }, []);
-
-  const handleSearch = () => {
-    fetchAttendance(fromDate, toDate);
-  };
+  const { data, isLoading, mutate } = useSWR(`/api/attendence?${params.toString()}`, fetcher);
+  const attendanceDates = (data?.attendance || []).map(
+    (a: AttendanceRecord) => new Date(a.attendance_date)
+  );
 
   return (
-    <div className="p-6 space-y-6 flex items-center justify-center flex-col">
-      {/* Date range search */}
-      <div className="flex items-end gap-4">
+    <div className="p-6 space-y-6 flex items-center justify-center flex-col min-h-screen bg-[#f1f7fe]">
+      <h1 className="text-2xl font-bold text-[#0d457f]">Attendance History</h1>
+
+      <div className="flex flex-wrap items-end gap-4 justify-center bg-white p-6 rounded-lg shadow-md">
         <div className="space-y-2">
           <Label htmlFor="from" className="text-sm font-semibold text-[#0b2546]">
             From *
@@ -72,7 +42,7 @@ export default function Attendance() {
             type="date"
             value={fromDate}
             onChange={(e) => setFromDate(e.target.value)}
-            className="w-full px-4 py-2.5 border border-[#83bff6] rounded-lg focus:ring-2 focus:ring-[#0d457f] focus:border-transparent transition"
+            className="w-full px-4 py-2 border border-[#83bff6] rounded-lg"
           />
         </div>
 
@@ -85,38 +55,37 @@ export default function Attendance() {
             type="date"
             value={toDate}
             onChange={(e) => setToDate(e.target.value)}
-            className="w-full px-4 py-2.5 border border-[#83bff6] rounded-lg focus:ring-2 focus:ring-[#0d457f] focus:border-transparent transition"
+            className="w-full px-4 py-2 border border-[#83bff6] rounded-lg"
           />
         </div>
 
         <Button
-          onClick={handleSearch}
-          disabled={loading}
-          className="mt-6 px-6 py-2.5 bg-[#0d457f] text-white rounded-lg hover:bg-[#08315e]"
+          onClick={() => mutate()}
+          disabled={isLoading}
+          className="px-6 py-2 bg-[#0d457f] text-white rounded-lg hover:bg-[#08315e]"
         >
-          {loading ? "Searching..." : "Search"}
+          {isLoading ? "Searching..." : "Search"}
         </Button>
       </div>
 
-      {/* Calendar */}
-      <div className="mt-6">
+      <div className="bg-white p-6 rounded-lg shadow-lg">
         <DayPicker
           mode="single"
-          selected={undefined}
-          month={month} // <-- show this month
+          month={month}
+          onMonthChange={setMonth}
           modifiers={{
             attendance: (date) =>
               attendanceDates.some(
-                (d) =>
+                (d: Date) =>
                   d.getFullYear() === date.getFullYear() &&
                   d.getMonth() === date.getMonth() &&
                   d.getDate() === date.getDate()
               ),
           }}
           modifiersClassNames={{
-            attendance: "bg-yellow-300 text-black rounded-full",
+            attendance: "bg-yellow-300 text-black rounded-full font-bold",
           }}
-          className="bg-white p-4 rounded-lg shadow"
+          className="p-4"
         />
       </div>
     </div>

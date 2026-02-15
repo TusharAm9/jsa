@@ -1,5 +1,5 @@
 generator client {
-  provider = "prisma-client"
+  provider = "prisma-client-js"
   output   = "../app/generated/prisma"
 }
 
@@ -48,6 +48,8 @@ model User {
   WorkOrders WorkDetails[]
   BankInfo  BankDetails?
   attendences Attendance[]
+
+  @@index([role])
 }
 
 model WorkDetails{
@@ -64,6 +66,10 @@ model WorkDetails{
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([createdAt])
+  @@index([ApprovalStatus])
 }
 
 model BankDetails {
@@ -94,7 +100,7 @@ model Attendance {
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
   @@unique([userId, attendance_date])
-
+  @@index([userId, attendance_date])
 }
 
 model Latest_news {
@@ -103,4 +109,6 @@ model Latest_news {
   content   String
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+
+  @@index([createdAt])
 }

@@ -1,15 +1,15 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/app/context/AuthContext';
+import useSWR, { mutate } from 'swr';
+import { UserListItemSkeleton, UserDetailSkeleton } from '@/components/Skeleton';
 
 interface UserSummary {
   id: number;
   name: string;
   email: string;
-  phone: string | null;
-  createdAt: string;
   summary: {
     totalWorks: number;
     approvedWorks: number;
@@ -35,7 +35,6 @@ interface UserDetail {
   id: number;
   name: string;
   email: string;
-  phone: string | null;
   createdAt: string;
   summary: {
     totalWorks: number;
@@ -45,358 +44,233 @@ interface UserDetail {
     completedPayment: number;
     pendingPayment: number;
     failedPayment: number;
+    totalPaymentDone: number;
+    totalPaymentPending: number;
+    serviceCounts: {
+      FullValue: number;
+      UBR: number;
+      P2: number;
+      Uninstall_IDU: number;
+      Uninstall_ODU: number;
+    };
   };
+  bankInfo?: {
+    id: number;
+    accountNumber: string;
+    bankName: string;
+    ifscCode: string;
+    accountHolder: string;
+  } | null;
   workOrders: WorkOrder[];
 }
+
+const getStatusColor = (status: string) => {
+  switch (status) {
+    case 'APPROVED':
+    case 'COMPLETED':
+      return 'bg-green-100 text-green-800 border-green-200';
+    case 'REJECTED':
+    case 'FAILED':
+      return 'bg-red-100 text-red-800 border-red-200';
+    case 'PENDING':
+    default:
+      return 'bg-yellow-100 text-yellow-800 border-yellow-200';
+  }
+};
+
+const fetcher = (url: string) => fetch(url).then((res) => res.json());
 
 export default function AdminDashboard() {
   const router = useRouter();
   const { user, isLoading: authLoading } = useAuth();
-  const [users, setUsers] = useState<UserSummary[]>([]);
-  const [selectedUser, setSelectedUser] = useState<UserDetail | null>(null);
-  const [isLoadingUsers, setIsLoadingUsers] = useState(true);
-  const [isLoadingDetail, setIsLoadingDetail] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const [updatingWorkId, setUpdatingWorkId] = useState<number | null>(null);
+  const [selectedUserId, setSelectedUserId] = useState<number | null>(null);
 
-  // Check if user is admin
-  useEffect(() => {
-    if (!authLoading && (!user || user.role !== 'ADMIN')) {
-      router.push('/login');
-    }
-  }, [user, authLoading, router]);
+  const { data: usersData, error: usersError, isLoading: isLoadingUsers } = useSWR(
+    user?.role === 'ADMIN' ? '/api/admin/users' : null,
+    fetcher
+  );
 
-  // Fetch JSA users
-  useEffect(() => {
-    if (user && user.role === 'ADMIN') {
-      fetchJSAUsers();
-    }
-  }, [user]);
+  const { data: detailData, isLoading: isLoadingDetail } = useSWR(
+    selectedUserId ? `/api/admin/users/${selectedUserId}` : null,
+    fetcher
+  );
 
-  const fetchJSAUsers = async () => {
+  const users = usersData?.users as UserSummary[] || [];
+  const selectedUser = detailData?.user as UserDetail | null;
+
+  const updateWorkStatus = async (workId: number, approvalStatus?: string, paymentStatus?: string) => {
     try {
-      setIsLoadingUsers(true);
-      setError(null);
-      const response = await fetch('/api/admin/users');
-      const data = await response.json();
-
-      if (!response.ok) {
-        throw new Error(data.message || 'Failed to fetch users');
-      }
-
-      setUsers(data.users || []);
-    } catch (err) {
-      const errorMessage = err instanceof Error ? err.message : 'An error occurred';
-      setError(errorMessage);
-      console.error('Error:', err);
-    } finally {
-      setIsLoadingUsers(false);
-    }
-  };
-
-  const fetchUserDetail = async (userId: number) => {
-    try {
-      setIsLoadingDetail(true);
-      setError(null);
-      const response = await fetch(`/api/admin/users/${userId}`);
-      const data = await response.json();
-
-      if (!response.ok) {
-        throw new Error(data.message || 'Failed to fetch user details');
-      }
-
-      setSelectedUser(data.user);
-    } catch (err) {
-      const errorMessage = err instanceof Error ? err.message : 'An error occurred';
-      setError(errorMessage);
-      console.error('Error:', err);
-    } finally {
-      setIsLoadingDetail(false);
-    }
-  };
-
-  const updateWorkStatus = async (
-    workId: number,
-    approvalStatus?: string,
-    paymentStatus?: string
-  ) => {
-    try {
-      setUpdatingWorkId(workId);
-      setError(null);
-
       const response = await fetch(`/api/admin/work/${workId}`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ approvalStatus, paymentStatus }),
       });
 
-      const data = await response.json();
-
-      if (!response.ok) {
-        throw new Error(data.message || 'Failed to update work order');
-      }
-
-      // Refresh user details
-      if (selectedUser) {
-        await fetchUserDetail(selectedUser.id);
+      if (response.ok) {
+        mutate(`/api/admin/users/${selectedUserId}`);
+        mutate('/api/admin/users');
       }
     } catch (err) {
-      const errorMessage = err instanceof Error ? err.message : 'An error occurred';
-      setError(errorMessage);
-      console.error('Error:', err);
-    } finally {
-      setUpdatingWorkId(null);
+      console.error(err);
+      alert('Failed to update status');
     }
   };
 
-  if (authLoading) {
-    return (
-      <div className="min-h-[calc(100vh-64px)] bg-linear-to-b from-slate-50 to-slate-100 flex items-center justify-center">
-        <div className="text-center">
-          <div className="inline-block animate-spin rounded-full h-12 w-12 border-b-2 border-[#0d457f]"></div>
-          <p className="mt-4 text-gray-600 font-medium">Loading...</p>
-        </div>
-      </div>
-    );
-  }
-
+  if (authLoading) return <div className="p-10 text-center">Loading...</div>;
   if (!user || user.role !== 'ADMIN') {
+    if (typeof window !== 'undefined') router.push('/login');
     return null;
   }
 
   return (
-    <div className="min-h-[calc(100vh-64px)] bg-linear-to-b from-slate-50 to-slate-100 p-4 md:p-8">
+    <div className="min-h-screen bg-gray-100 p-4 md:p-8">
       <div className="max-w-7xl mx-auto">
-        {/* Header */}
-        <div className="mb-8">
-          <h1 className="text-4xl font-bold text-[#0d457f] mb-2">Admin Dashboard</h1>
-          <p className="text-gray-600">Manage JSA users, approve works, and track payments</p>
-        </div>
+        <h1 className="text-3xl font-bold text-[#0d457f] mb-8">Admin Dashboard</h1>
 
-        {error && (
-          <div className="mb-6 p-4 bg-red-50 border-l-4 border-red-500 rounded-lg">
-            <p className="text-red-700 font-medium">{error}</p>
-          </div>
-        )}
-
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          {/* Left: Users List */}
-          <div className="lg:col-span-1">
-            <div className="bg-white rounded-lg shadow-lg p-6">
-              <h2 className="text-xl font-bold text-[#0d457f] mb-4">JSA Users</h2>
-
+        <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
+          {/* User List */}
+          <div className="lg:col-span-1 bg-white rounded-lg shadow p-4 h-fit">
+            <h2 className="text-xl font-bold mb-4 border-b pb-2">Personnel</h2>
+            <div className="space-y-2 max-h-[600px] overflow-y-auto pr-2">
               {isLoadingUsers ? (
-                <div className="text-center py-8">
-                  <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-[#0d457f]"></div>
-                  <p className="mt-2 text-gray-500 text-sm">Loading users...</p>
-                </div>
-              ) : users.length === 0 ? (
-                <p className="text-gray-500 text-sm text-center py-8">No JSA users found</p>
+                Array(5).fill(0).map((_, i) => <UserListItemSkeleton key={i} />)
               ) : (
-                <div className="space-y-2 max-h-150 overflow-y-auto">
-                  {users.map((u) => (
-                    <button
-                      key={u.id}
-                      onClick={() => fetchUserDetail(u.id)}
-                      className={`w-full text-left p-3 rounded-lg transition-colors ${
-                        selectedUser?.id === u.id
-                          ? 'bg-[#0d457f] text-white'
-                          : 'bg-gray-100 text-[#0b2546] hover:bg-gray-200'
+                users.map((u) => (
+                  <button
+                    key={u.id}
+                    onClick={() => setSelectedUserId(u.id)}
+                    className={`w-full text-left p-3 rounded transition-colors ${selectedUserId === u.id
+                        ? 'bg-[#0d457f] text-white'
+                        : 'bg-gray-50 hover:bg-gray-200 text-gray-800'
                       }`}
-                    >
-                      <div className="font-semibold text-sm">{u.name}</div>
-                      <div className="text-xs mt-1 opacity-80">{u.email}</div>
-                      <div className="text-xs mt-2 flex gap-2">
-                        <span className="bg-blue-100 text-blue-800 px-2 py-1 rounded">
-                          {u.summary.totalWorks} works
-                        </span>
-                      </div>
-                    </button>
-                  ))}
-                </div>
+                  >
+                    <div className="font-bold">{u.name}</div>
+                    <div className="text-xs opacity-80">{u.email}</div>
+                  </button>
+                ))
               )}
             </div>
           </div>
 
-          {/* Right: User Details */}
-          <div className="lg:col-span-2">
-            {selectedUser ? (
+          {/* User Detail */}
+          <div className="lg:col-span-3">
+            {isLoadingDetail ? (
+              <UserDetailSkeleton />
+            ) : selectedUser ? (
               <div className="space-y-6">
-                {/* User Summary */}
-                <div className="bg-white rounded-lg shadow-lg p-6 border-t-4 border-[#0d457f]">
-                  <div className="flex justify-between items-start mb-4">
-                    <div>
-                      <h3 className="text-2xl font-bold text-[#0d457f]">{selectedUser.name}</h3>
-                      <p className="text-gray-600">{selectedUser.email}</p>
-                      {selectedUser.phone && <p className="text-gray-600">{selectedUser.phone}</p>}
-                    </div>
-                    <div className="text-xs text-gray-500">
-                      Member since {new Date(selectedUser.createdAt).toLocaleDateString()}
-                    </div>
+                {/* Summary Cards */}
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                  <div className="bg-white p-4 rounded-lg shadow border-l-4 border-blue-500">
+                    <h3 className="text-gray-500 text-xs font-bold uppercase tracking-wider">Total Works</h3>
+                    <p className="text-2xl font-bold">{selectedUser.summary.totalWorks}</p>
                   </div>
+                  <div className="bg-white p-4 rounded-lg shadow border-l-4 border-green-500">
+                    <h3 className="text-gray-500 text-xs font-bold uppercase tracking-wider">Approved</h3>
+                    <p className="text-2xl font-bold text-green-600">{selectedUser.summary.approvedWorks}</p>
+                  </div>
+                  <div className="bg-white p-4 rounded-lg shadow border-l-4 border-amber-500">
+                    <h3 className="text-gray-500 text-xs font-bold uppercase tracking-wider">Pending Appr.</h3>
+                    <p className="text-2xl font-bold text-amber-600">{selectedUser.summary.pendingApproval}</p>
+                  </div>
+                  <div className="bg-white p-4 rounded-lg shadow border-l-4 border-red-500">
+                    <h3 className="text-gray-500 text-xs font-bold uppercase tracking-wider">Rejected</h3>
+                    <p className="text-2xl font-bold text-red-600">{selectedUser.summary.rejectedWorks}</p>
+                  </div>
+                </div>
 
-                  {/* Stats Grid */}
-                  <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                    <div className="bg-blue-50 p-4 rounded-lg">
-                      <div className="text-2xl font-bold text-blue-600">
-                        {selectedUser.summary.totalWorks}
-                      </div>
-                      <div className="text-xs text-gray-600 mt-1">Total Works</div>
-                    </div>
-                    <div className="bg-green-50 p-4 rounded-lg">
-                      <div className="text-2xl font-bold text-green-600">
-                        {selectedUser.summary.approvedWorks}
-                      </div>
-                      <div className="text-xs text-gray-600 mt-1">Approved</div>
-                    </div>
-                    <div className="bg-yellow-50 p-4 rounded-lg">
-                      <div className="text-2xl font-bold text-yellow-600">
-                        {selectedUser.summary.pendingApproval}
-                      </div>
-                      <div className="text-xs text-gray-600 mt-1">Pending Approval</div>
-                    </div>
-                    <div className="bg-red-50 p-4 rounded-lg">
-                      <div className="text-2xl font-bold text-red-600">
-                        {selectedUser.summary.rejectedWorks}
-                      </div>
-                      <div className="text-xs text-gray-600 mt-1">Rejected</div>
-                    </div>
+                <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
+                  <div className="bg-slate-50 p-3 rounded-lg border border-slate-200 text-center">
+                    <h4 className="text-[10px] font-black uppercase text-slate-400">Full Value</h4>
+                    <p className="text-xl font-black text-slate-800">{selectedUser.summary.serviceCounts?.FullValue || 0}</p>
                   </div>
+                  <div className="bg-slate-50 p-3 rounded-lg border border-slate-200 text-center">
+                    <h4 className="text-[10px] font-black uppercase text-slate-400">UBR</h4>
+                    <p className="text-xl font-black text-slate-800">{selectedUser.summary.serviceCounts?.UBR || 0}</p>
+                  </div>
+                  <div className="bg-slate-50 p-3 rounded-lg border border-slate-200 text-center">
+                    <h4 className="text-[10px] font-black uppercase text-slate-400">P2</h4>
+                    <p className="text-xl font-black text-slate-800">{selectedUser.summary.serviceCounts?.P2 || 0}</p>
+                  </div>
+                  <div className="bg-slate-50 p-3 rounded-lg border border-slate-200 text-center">
+                    <h4 className="text-[10px] font-black uppercase text-slate-400">Uninstall IDU</h4>
+                    <p className="text-xl font-black text-slate-800">{selectedUser.summary.serviceCounts?.Uninstall_IDU || 0}</p>
+                  </div>
+                  <div className="bg-slate-50 p-3 rounded-lg border border-slate-200 text-center">
+                    <h4 className="text-[10px] font-black uppercase text-slate-400">Uninstall ODU</h4>
+                    <p className="text-xl font-black text-slate-800">{selectedUser.summary.serviceCounts?.Uninstall_ODU || 0}</p>
+                  </div>
+                </div>
 
-                  {/* Payment Stats */}
-                  <div className="mt-4 grid grid-cols-3 gap-4">
-                    <div className="bg-purple-50 p-4 rounded-lg">
-                      <div className="text-lg font-bold text-purple-600">
-                        {selectedUser.summary.completedPayment}
-                      </div>
-                      <div className="text-xs text-gray-600 mt-1">Payment Completed</div>
+                {/* Bank Info */}
+                <div className="bg-white p-6 rounded-lg shadow">
+                  <h2 className="text-xl font-bold mb-4 text-[#0d457f]">Bank Details</h2>
+                  {selectedUser.bankInfo ? (
+                    <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
+                      <div><p className="font-bold">A/C Holder:</p> <p>{selectedUser.bankInfo.accountHolder}</p></div>
+                      <div><p className="font-bold">Bank:</p> <p>{selectedUser.bankInfo.bankName}</p></div>
+                      <div><p className="font-bold">Number:</p> <p>{selectedUser.bankInfo.accountNumber}</p></div>
+                      <div><p className="font-bold">IFSC:</p> <p>{selectedUser.bankInfo.ifscCode}</p></div>
                     </div>
-                    <div className="bg-orange-50 p-4 rounded-lg">
-                      <div className="text-lg font-bold text-orange-600">
-                        {selectedUser.summary.pendingPayment}
-                      </div>
-                      <div className="text-xs text-gray-600 mt-1">Payment Pending</div>
-                    </div>
-                    <div className="bg-red-50 p-4 rounded-lg">
-                      <div className="text-lg font-bold text-red-600">
-                        {selectedUser.summary.failedPayment}
-                      </div>
-                      <div className="text-xs text-gray-600 mt-1">Payment Failed</div>
-                    </div>
-                  </div>
+                  ) : (
+                    <p className="text-gray-500 italic">No bank information provided</p>
+                  )}
                 </div>
 
                 {/* Work Orders Table */}
-                <div className="bg-white rounded-lg shadow-lg p-6">
-                  <h3 className="text-xl font-bold text-[#0d457f] mb-4">Past Work Orders</h3>
-
-                  {isLoadingDetail ? (
-                    <div className="text-center py-8">
-                      <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-[#0d457f]"></div>
-                    </div>
-                  ) : selectedUser.workOrders.length === 0 ? (
-                    <p className="text-gray-500 text-center py-8">No work orders found</p>
-                  ) : (
-                    <div className="overflow-x-auto">
-                      <table className="w-full">
-                        <thead className="bg-gray-100 border-b border-gray-300">
-                          <tr>
-                            <th className="px-4 py-3 text-left text-sm font-semibold text-gray-900">
-                              Customer
-                            </th>
-                            <th className="px-4 py-3 text-left text-sm font-semibold text-gray-900">
-                              Building
-                            </th>
-                            <th className="px-4 py-3 text-left text-sm font-semibold text-gray-900">
-                              Type
-                            </th>
-                            <th className="px-4 py-3 text-left text-sm font-semibold text-gray-900">
-                              Approval
-                            </th>
-                            <th className="px-4 py-3 text-left text-sm font-semibold text-gray-900">
-                              Payment
-                            </th>
-                            <th className="px-4 py-3 text-left text-sm font-semibold text-gray-900">
-                              Actions
-                            </th>
+                <div className="bg-white rounded-lg shadow overflow-hidden">
+                  <h2 className="text-xl font-bold p-6 bg-gray-50 border-b text-[#0d457f]">Work Orders</h2>
+                  <div className="overflow-x-auto">
+                    <table className="w-full">
+                      <thead className="bg-gray-100">
+                        <tr className="text-left text-sm font-bold text-gray-700">
+                          <th className="p-4">Customer</th>
+                          <th className="p-4">Type</th>
+                          <th className="p-4">Date</th>
+                          <th className="p-4">Approval</th>
+                          <th className="p-4">Payment</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-gray-200">
+                        {selectedUser.workOrders.map((work) => (
+                          <tr key={work.id} className="hover:bg-gray-50">
+                            <td className="p-4">
+                              <div className="font-bold">{work.caustomerName}</div>
+                              <div className="text-xs text-gray-500">{work.PhoneNumber}</div>
+                            </td>
+                            <td className="p-4 text-sm">{work.ServiceType}</td>
+                            <td className="p-4 text-sm">{new Date(work.Date).toLocaleDateString()}</td>
+                            <td className="p-4">
+                              <select
+                                value={work.ApprovalStatus}
+                                onChange={(e) => updateWorkStatus(work.id, e.target.value)}
+                                className={`border rounded px-2 py-1 text-xs font-bold outline-none cursor-pointer transition-colors ${getStatusColor(work.ApprovalStatus)}`}
+                              >
+                                <option value="PENDING">Pending</option>
+                                <option value="APPROVED">Approve</option>
+                                <option value="REJECTED">Reject</option>
+                              </select>
+                            </td>
+                            <td className="p-4">
+                              <select
+                                value={work.PaymentStatus}
+                                onChange={(e) => updateWorkStatus(work.id, undefined, e.target.value)}
+                                className={`border rounded px-2 py-1 text-xs font-bold outline-none cursor-pointer transition-colors ${getStatusColor(work.PaymentStatus)}`}
+                              >
+                                <option value="PENDING">Pending</option>
+                                <option value="COMPLETED">Settled</option>
+                                <option value="FAILED">Failed</option>
+                              </select>
+                            </td>
                           </tr>
-                        </thead>
-                        <tbody className="divide-y divide-gray-200">
-                          {selectedUser.workOrders.map((work) => (
-                            <tr key={work.id} className="hover:bg-gray-50 transition-colors">
-                              <td className="px-4 py-3 text-sm font-medium text-gray-900">
-                                {work.caustomerName}
-                              </td>
-                              <td className="px-4 py-3 text-sm text-gray-700">
-                                {work.BuildingId}
-                              </td>
-                              <td className="px-4 py-3 text-sm">
-                                <span className="px-2 py-1 rounded text-xs font-semibold bg-blue-100 text-blue-800">
-                                  {work.ServiceType}
-                                </span>
-                              </td>
-                              <td className="px-4 py-3 text-sm">
-                                <select
-                                  value={work.ApprovalStatus}
-                                  onChange={(e) =>
-                                    updateWorkStatus(work.id, e.target.value)
-                                  }
-                                  disabled={updatingWorkId === work.id}
-                                  className={`px-2 py-1 rounded text-xs font-semibold border-none cursor-pointer ${
-                                    work.ApprovalStatus === 'APPROVED'
-                                      ? 'bg-green-100 text-green-800'
-                                      : work.ApprovalStatus === 'REJECTED'
-                                      ? 'bg-red-100 text-red-800'
-                                      : 'bg-yellow-100 text-yellow-800'
-                                  } disabled:opacity-50`}
-                                >
-                                  <option value="PENDING">Pending</option>
-                                  <option value="APPROVED">Approved</option>
-                                  <option value="REJECTED">Rejected</option>
-                                </select>
-                              </td>
-                              <td className="px-4 py-3 text-sm">
-                                <select
-                                  value={work.PaymentStatus}
-                                  onChange={(e) =>
-                                    updateWorkStatus(work.id, undefined, e.target.value)
-                                  }
-                                  disabled={updatingWorkId === work.id}
-                                  className={`px-2 py-1 rounded text-xs font-semibold border-none cursor-pointer ${
-                                    work.PaymentStatus === 'COMPLETED'
-                                      ? 'bg-green-100 text-green-800'
-                                      : work.PaymentStatus === 'FAILED'
-                                      ? 'bg-red-100 text-red-800'
-                                      : 'bg-yellow-100 text-yellow-800'
-                                  } disabled:opacity-50`}
-                                >
-                                  <option value="PENDING">Pending</option>
-                                  <option value="COMPLETED">Completed</option>
-                                  <option value="FAILED">Failed</option>
-                                </select>
-                              </td>
-                              <td className="px-4 py-3 text-sm">
-                                <button
-                                  onClick={() =>
-                                    updateWorkStatus(work.id, 'APPROVED', 'COMPLETED')
-                                  }
-                                  disabled={updatingWorkId === work.id}
-                                  className="text-blue-600 hover:text-blue-800 font-semibold disabled:opacity-50"
-                                >
-                                  {updatingWorkId === work.id ? 'Updating...' : 'Approve & Pay'}
-                                </button>
-                              </td>
-                            </tr>
-                          ))}
-                        </tbody>
-                      </table>
-                    </div>
-                  )}
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
                 </div>
               </div>
             ) : (
-              <div className="bg-white rounded-lg shadow-lg p-12 text-center">
-                <p className="text-gray-600 text-lg">Select a user to view their work details</p>
+              <div className="bg-white rounded-lg shadow p-12 text-center text-gray-500">
+                Select a user to view detailed operational and financial reports
               </div>
             )}
           </div>
