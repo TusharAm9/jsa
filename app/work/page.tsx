@@ -8,9 +8,10 @@ interface WorkOrder {
   id: number;
   caustomerName: string;
   PhoneNumber: string;
+  Address?: string;
   BuildingId: string;
   Date: string;
-  ServiceType: 'FullValue' | 'UBR' | 'P2';
+  ServiceType: 'FullValue' | 'UBR' | 'P2' | 'UninstalationIDUSTB' | 'UninstalationODU';
   PaymentStatus: 'PENDING' | 'COMPLETED' | 'FAILED';
   createdAt: string;
 }
@@ -37,6 +38,9 @@ const getServiceTypeColor = (type: string) => {
       return 'bg-purple-100 text-purple-800';
     case 'P2':
       return 'bg-indigo-100 text-indigo-800';
+    case 'UninstalationIDUSTB':
+    case 'UninstalationODU':
+      return 'bg-orange-100 text-orange-800';
     default:
       return 'bg-gray-100 text-gray-800';
   }
@@ -95,6 +99,9 @@ export default function WorkPage() {
                       Building ID
                     </th>
                     <th className="px-6 py-4 text-left text-sm font-bold text-[#0b2546]">
+                      Address
+                    </th>
+                    <th className="px-6 py-4 text-left text-sm font-bold text-[#0b2546]">
                       Phone
                     </th>
                     <th className="px-6 py-4 text-left text-sm font-bold text-[#0b2546]">
@@ -114,8 +121,11 @@ export default function WorkPage() {
                       <td className="px-6 py-4 text-sm font-semibold text-gray-900 capitalize">
                         {order.caustomerName}
                       </td>
-                      <td className="px-6 py-4 text-sm text-gray-600 font-medium">
+                      <td className="px-6 py-4 text-sm text-gray-600 font-medium whitespace-nowrap">
                         {order.BuildingId}
+                      </td>
+                      <td className="px-6 py-4 text-sm text-gray-600 font-medium">
+                        {order.Address || 'N/A'}
                       </td>
                       <td className="px-6 py-4 text-sm text-gray-600 font-medium">
                         {order.PhoneNumber}

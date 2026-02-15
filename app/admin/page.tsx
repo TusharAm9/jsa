@@ -24,8 +24,9 @@ interface WorkOrder {
   caustomerName: string;
   PhoneNumber: string;
   BuildingId: string;
+  Address?: string;
   Date: string;
-  ServiceType: 'FullValue' | 'UBR' | 'P2';
+  ServiceType: 'FullValue' | 'UBR' | 'P2' | 'UninstalationIDUSTB' | 'UninstalationODU';
   PaymentStatus: 'PENDING' | 'COMPLETED' | 'FAILED';
   ApprovalStatus: 'PENDING' | 'APPROVED' | 'REJECTED';
   createdAt: string;
@@ -140,8 +141,8 @@ export default function AdminDashboard() {
                     key={u.id}
                     onClick={() => setSelectedUserId(u.id)}
                     className={`w-full text-left p-3 rounded transition-colors ${selectedUserId === u.id
-                        ? 'bg-[#0d457f] text-white'
-                        : 'bg-gray-50 hover:bg-gray-200 text-gray-800'
+                      ? 'bg-[#0d457f] text-white'
+                      : 'bg-gray-50 hover:bg-gray-200 text-gray-800'
                       }`}
                   >
                     <div className="font-bold">{u.name}</div>
@@ -224,6 +225,7 @@ export default function AdminDashboard() {
                       <thead className="bg-gray-100">
                         <tr className="text-left text-sm font-bold text-gray-700">
                           <th className="p-4">Customer</th>
+                          <th className="p-4">Address</th>
                           <th className="p-4">Type</th>
                           <th className="p-4">Date</th>
                           <th className="p-4">Approval</th>
@@ -236,6 +238,10 @@ export default function AdminDashboard() {
                             <td className="p-4">
                               <div className="font-bold">{work.caustomerName}</div>
                               <div className="text-xs text-gray-500">{work.PhoneNumber}</div>
+                            </td>
+                            <td className="p-4">
+                              <div className="text-sm font-medium text-gray-700">{work.Address || 'N/A'}</div>
+                              <div className="text-[10px] text-gray-500 uppercase tracking-wider font-bold">B-ID: {work.BuildingId}</div>
                             </td>
                             <td className="p-4 text-sm">{work.ServiceType}</td>
                             <td className="p-4 text-sm">{new Date(work.Date).toLocaleDateString()}</td>

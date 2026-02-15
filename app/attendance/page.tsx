@@ -23,7 +23,7 @@ export default function Attendance() {
   if (fromDate) params.append("from", fromDate);
   if (toDate) params.append("to", toDate);
 
-  const { data, isLoading, mutate } = useSWR(`/api/attendence?${params.toString()}`, fetcher);
+  const { data, isLoading, mutate } = useSWR(`/api/attendance?${params.toString()}`, fetcher);
   const attendanceDates = (data?.attendance || []).map(
     (a: AttendanceRecord) => new Date(a.attendance_date)
   );

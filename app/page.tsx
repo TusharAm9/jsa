@@ -4,7 +4,7 @@ import { GrUserWorker, GrWorkshop } from "react-icons/gr";
 import { FaMoneyBillWave } from "react-icons/fa";
 import Link from "next/link";
 import { useAuth } from "./context/AuthContext";
-import AttendanceButtons from "@/components/Attendence";
+import AttendanceButtons from "@/components/Attendance_Buttons";
 import NewsSection from "@/components/NewsSection";
 
 export default function Home() {
