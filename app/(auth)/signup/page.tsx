@@ -121,6 +121,11 @@ export default function SignupPage() {
               className="w-full px-4 py-2 border border-[#83bff6] rounded-lg focus:outline-none focus:border-[#0d457f] focus:ring-2 focus:ring-[#83bff6]"
               disabled={isLoading}
             />
+            <div className="mt-1 text-right">
+              <span className="text-xs text-gray-500 italic">
+                Forgot password? Contact admin to reset.
+              </span>
+            </div>
           </div>
 
           <button
@@ -134,7 +139,7 @@ export default function SignupPage() {
 
         <p className="text-[#0b2546] text-center">
           Already have an account?{' '}
-          <Link href="/auth/login" className="text-[#0d457f] font-bold hover:underline">
+          <Link href="/login" className="text-[#0d457f] font-bold hover:underline">
             Login here
           </Link>
         </p>

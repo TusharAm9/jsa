@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { getSessionFromCookie } from '@/lib/auth';
+import bcrypt from "bcryptjs";
 
 
 function serializeBigInt(data: any) {
@@ -145,6 +146,78 @@ export async function GET(
     console.error('Error fetching user work details:', error);
     return NextResponse.json(
       { message: 'An error occurred while fetching user work details' },
+      { status: 500 }
+    );
+  }
+}
+
+// Update user (e.g., password reset by admin)
+export async function PATCH(
+  request: NextRequest,
+  { params }: { params: Promise<{ userId: string }> }
+) {
+  try {
+    const session = await getSessionFromCookie();
+
+    if (!session) {
+      return NextResponse.json(
+        { message: 'Unauthorized - Please login first' },
+        { status: 401 }
+      );
+    }
+
+    // Check if current user is admin
+    const adminUser = await prisma.user.findUnique({
+      where: { id: session.userId },
+    });
+
+    if (!adminUser || adminUser.role !== 'ADMIN') {
+      return NextResponse.json(
+        { message: 'Forbidden - Admin access required' },
+        { status: 403 }
+      );
+    }
+
+    const { userId } = await params;
+    const userId_num = parseInt(userId);
+    const { password, name, phone, role } = await request.json();
+
+    const updateData: any = {};
+    if (password) {
+      const saltRounds = 10;
+      updateData.password = await bcrypt.hash(password, saltRounds);
+    }
+    if (name) updateData.name = name;
+    if (phone) updateData.phone = phone;
+    if (role) updateData.role = role;
+
+    if (Object.keys(updateData).length === 0) {
+      return NextResponse.json(
+        { message: 'No data provided for update' },
+        { status: 400 }
+      );
+    }
+
+    const updatedUser = await prisma.user.update({
+      where: { id: userId_num },
+      data: updateData,
+    });
+
+    return NextResponse.json(
+      {
+        message: 'User updated successfully',
+        user: {
+          id: updatedUser.id,
+          name: updatedUser.name,
+          email: updatedUser.email,
+        },
+      },
+      { status: 200 }
+    );
+  } catch (error) {
+    console.error('Error updating user:', error);
+    return NextResponse.json(
+      { message: 'An error occurred while updating user' },
       { status: 500 }
     );
   }

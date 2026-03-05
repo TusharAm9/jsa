@@ -85,6 +85,10 @@ export default function AdminDashboard() {
   const router = useRouter();
   const { user, isLoading: authLoading } = useAuth();
   const [selectedUserId, setSelectedUserId] = useState<number | null>(null);
+  const [newPassword, setNewPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
+  const [isUpdatingPassword, setIsUpdatingPassword] = useState(false);
+  const [showConfirmModal, setShowConfirmModal] = useState(false);
 
   const { data: usersData, error: usersError, isLoading: isLoadingUsers } = useSWR(
     user?.role === 'ADMIN' ? '/api/admin/users' : null,
@@ -114,6 +118,39 @@ export default function AdminDashboard() {
     } catch (err) {
       console.error(err);
       alert('Failed to update status');
+    }
+  };
+
+  const handleUpdatePassword = async () => {
+    if (!newPassword || !selectedUserId || !selectedUser) return;
+    setShowConfirmModal(true);
+  };
+
+  const confirmUpdatePassword = async () => {
+    if (!newPassword || !selectedUserId || !selectedUser) return;
+
+    setShowConfirmModal(false);
+    setIsUpdatingPassword(true);
+    try {
+      const response = await fetch(`/api/admin/users/${selectedUserId}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ password: newPassword }),
+      });
+
+      if (response.ok) {
+        alert('Password updated successfully');
+        setNewPassword('');
+        setShowPassword(false);
+      } else {
+        const error = await response.json();
+        alert(error.message || 'Failed to update password');
+      }
+    } catch (err) {
+      console.error(err);
+      alert('Failed to update password');
+    } finally {
+      setIsUpdatingPassword(false);
     }
   };
 
@@ -202,19 +239,50 @@ export default function AdminDashboard() {
                   </div>
                 </div>
 
-                {/* Bank Info */}
-                <div className="bg-white p-6 rounded-lg shadow">
-                  <h2 className="text-xl font-bold mb-4 text-[#0d457f]">Bank Details</h2>
-                  {selectedUser.bankInfo ? (
-                    <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
-                      <div><p className="font-bold">A/C Holder:</p> <p>{selectedUser.bankInfo.accountHolder}</p></div>
-                      <div><p className="font-bold">Bank:</p> <p>{selectedUser.bankInfo.bankName}</p></div>
-                      <div><p className="font-bold">Number:</p> <p>{selectedUser.bankInfo.accountNumber}</p></div>
-                      <div><p className="font-bold">IFSC:</p> <p>{selectedUser.bankInfo.ifscCode}</p></div>
+                {/* Bank Info & Password Reset */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <div className="bg-white p-6 rounded-lg shadow">
+                    <h2 className="text-xl font-bold mb-4 text-[#0d457f]">Bank Details</h2>
+                    {selectedUser.bankInfo ? (
+                      <div className="space-y-2 text-sm">
+                        <p><span className="font-bold">A/C Holder:</span> {selectedUser.bankInfo.accountHolder}</p>
+                        <p><span className="font-bold">Bank:</span> {selectedUser.bankInfo.bankName}</p>
+                        <p><span className="font-bold">Number:</span> {selectedUser.bankInfo.accountNumber}</p>
+                        <p><span className="font-bold">IFSC:</span> {selectedUser.bankInfo.ifscCode}</p>
+                      </div>
+                    ) : (
+                      <p className="text-gray-500 italic">No bank information provided</p>
+                    )}
+                  </div>
+
+                  <div className="bg-white p-6 rounded-lg shadow">
+                    <h2 className="text-xl font-bold mb-4 text-[#0d457f]">Reset Password</h2>
+                    <div className="space-y-4">
+                      <div className="relative">
+                        <input
+                          type={showPassword ? "text" : "password"}
+                          placeholder="New Password"
+                          value={newPassword}
+                          onChange={(e) => setNewPassword(e.target.value)}
+                          className="w-full px-3 py-2 border rounded text-sm outline-none focus:border-[#0d457f] pr-20"
+                        />
+                        <button
+                          type="button"
+                          onClick={() => setShowPassword(!showPassword)}
+                          className="absolute right-2 top-1/2 -translate-y-1/2 text-xs font-bold text-[#0d457f] hover:underline"
+                        >
+                          {showPassword ? 'Hide' : 'Show'}
+                        </button>
+                      </div>
+                      <button
+                        onClick={handleUpdatePassword}
+                        disabled={!newPassword || isUpdatingPassword}
+                        className="w-full bg-[#0d457f] text-white font-bold py-2 px-4 rounded transition-colors disabled:opacity-50"
+                      >
+                        {isUpdatingPassword ? 'Updating...' : 'Set New Password'}
+                      </button>
                     </div>
-                  ) : (
-                    <p className="text-gray-500 italic">No bank information provided</p>
-                  )}
+                  </div>
                 </div>
 
                 {/* Work Orders Table */}
@@ -282,6 +350,42 @@ export default function AdminDashboard() {
           </div>
         </div>
       </div>
+
+      {/* Confirmation Modal */}
+      {showConfirmModal && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4 animate-in fade-in duration-200">
+          <div className="bg-white rounded-2xl shadow-2xl max-w-sm w-full p-6 space-y-6 transform animate-in zoom-in-95 duration-200">
+            <div className="text-center space-y-2">
+              <h3 className="text-xl font-bold text-[#0d457f]">Confirm Password Change</h3>
+              <p className="text-gray-600 text-sm">
+                Are you sure you want to change the password for <span className="font-bold text-[#0d457f]">{selectedUser?.name}</span>?
+              </p>
+            </div>
+
+            <div className="bg-gray-50 p-4 rounded-xl border border-gray-100 text-center">
+              <p className="text-xs text-gray-400 uppercase font-black mb-1">New Password</p>
+              <p className="text-lg font-mono font-bold text-[#0d457f] break-all">
+                {newPassword}
+              </p>
+            </div>
+
+            <div className="flex flex-col gap-3">
+              <button
+                onClick={confirmUpdatePassword}
+                className="w-full bg-[#0d457f] hover:bg-[#0a3a66] text-white font-bold py-3 rounded-xl transition-all shadow-lg active:scale-95"
+              >
+                Yes, Change Password
+              </button>
+              <button
+                onClick={() => setShowConfirmModal(false)}
+                className="w-full bg-gray-100 hover:bg-gray-200 text-gray-600 font-bold py-3 rounded-xl transition-all active:scale-95"
+              >
+                Cancel
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
